@@ -1,6 +1,5 @@
 # TinyString
-
-An ASCII-only text type for [Embedded Swift](https://www.swift.org/documentation/articles/embedded-swift.html) — like `String`, but without the Unicode data tables that Embedded Swift can't afford. The same source runs unmodified on Embedded Swift, Swift for WebAssembly, and standard Swift on Apple/Linux platforms.
+An ASCII-only text type for [Embedded Swift](https://www.swift.org/documentation/articles/embedded-swift.html) — like `String`, but without the Unicode data tables that Embedded Swift can't afford. The same source runs unmodified on Embedded Swift (including bare-metal RISC-V microcontrollers), Swift for WebAssembly, and standard Swift on Apple/Linux platforms.
 
 ## Quick start
 
@@ -8,7 +7,7 @@ An ASCII-only text type for [Embedded Swift](https://www.swift.org/documentation
 import TinyString
 
 let name = TinyString("World")
-let greeting = TinyString("Hello, \(name)! Count: \(42)")
+let greeting = TinyString("Hello, \(name)! Ultimate Answer: \(42)")
 ```
 
 Construction is lossy by default — non-ASCII bytes are replaced with `?`, and this path never throws or traps, so string interpolation is always safe to write. When you need a hard guarantee instead of silent replacement, use the strict, typed-throws initializer:
@@ -35,13 +34,54 @@ label.append(UInt8(ascii: "!")) // truncates/replaces lossily; use init(strict:)
 
 `InlineTinyString` is backed by `InlineArray`, which requires macOS/iOS/tvOS/watchOS/visionOS "26"-generation OSes on standard, non-Embedded builds. That floor does not apply under Embedded Swift or WebAssembly builds, since Embedded's stdlib isn't tied to a dynamically-linked, OS-versioned runtime.
 
+Both types share the same construction, comparison, and search behavior through `ASCIIByteCollection` — a protocol used only via generics and direct conformance, never as an existential, so it stays Embedded-safe.
+
+## Working with the bytes
+
+Both types are `Collection` (`Element == UInt8`), `Equatable`, and `Hashable`:
+
+```swift
+let s = TinyString("hello world")
+s.count                          // 11
+s[0]                              // 0x68 ('h')
+for byte in s { /* ... */ }
+
+s.hasPrefix(TinyString("hello"))  // true
+s.hasSuffix(TinyString("world"))  // true
+s.contains(TinyString("lo wo"))   // true
+
+TinyString("12345").isAllDigits   // true
+```
+
+`hasPrefix`/`hasSuffix`/`contains` are generic over `ASCIIByteCollection`, so they work across both types interchangeably — you can check an `InlineTinyString<8>` prefix against a heap-backed `TinyString`, or vice versa.
+
+For interop with APIs that need a raw pointer and count (C function boundaries, logging, etc.), both types expose `withUnsafeBufferPointer`:
+
+```swift
+tinyString.withUnsafeBufferPointer { buffer in
+    some_c_function(buffer.baseAddress, Int32(buffer.count))
+}
+```
+
 ## `ASCII`
 
 A single-byte value type with classification helpers (`isDigit`, `isLetter`, `isUppercase`, `isLowercase`, `isAlphanumeric`, `isWhitespace`, `isControl`, `isPrintable`) used internally by both string types and available directly.
 
 ## Platform bridging
 
-On non-Embedded builds, both types conform to `CustomStringConvertible` for easy interop with Swift's `String`. This bridging is compiled out under Embedded Swift via `#if !hasFeature(Embedded)` — a deliberate code-size/API-hygiene choice for the smallest bare-metal targets, not a compiler necessity (`String.utf8` and `String(decoding:as:)` themselves work fine under Embedded).
+On non-Embedded builds, both types conform to `CustomStringConvertible` for easy interop with Swift's `String`. This bridging is compiled out under Embedded Swift via `#if !hasFeature(Embedded)` — a deliberate code-size/API-hygiene choice for the smallest bare-metal targets, not a compiler necessity (`String.utf8` and `String(decoding:as:)` themselves work fine under Embedded). `LosslessStringConvertible` is intentionally not adopted — its failable `init?(_:)` would collide with the unconditional, lossy `init(_ string: String)`; use `init(strict:)` when you need a hard ASCII guarantee from a `String`.
+
+## Adding TinyString to your project
+
+For a normal SwiftPM package, add it as a dependency (by path, until it has a published URL):
+
+```swift
+dependencies: [
+    .package(path: "../TinyString")
+]
+```
+
+For projects that compile Swift directly through another build system with no SwiftPM in the loop (e.g. ESP-IDF's CMake integration), vendor the source files you need directly — `TinyString` has no dependencies of its own, so copying files works cleanly. This is how it's used today on real ESP32-C3/C6 hardware: only the fixed-capacity `InlineTinyString` half is vendored there, since that project deliberately avoids heap allocation.
 
 ## Building and verifying
 
@@ -71,9 +111,12 @@ Install the Wasm SDKs once via `swift sdk install <bundle-url>` (see the [Embedd
 `swift test` requires a full Xcode installation selected (`xcode-select -s /Applications/Xcode.app`), not just the Command Line Tools — otherwise `import Testing` fails with unrelated `_DarwinFoundation1` errors.
 
 ## What this is not
-
 - No regex/pattern matching beyond `hasPrefix`/`hasSuffix`/`contains`.
 - No locale-aware anything — it's ASCII-only by definition.
 - No Unicode normalization or case-folding.
 - No `Codable` conformance.
 - No Foundation dependency, ever.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
