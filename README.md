@@ -72,6 +72,27 @@ tinyString.withUnsafeBufferPointer { buffer in
 
 Prefer `withSpan` unless you're specifically crossing into an unsafe or C API — `Span` gives the same contiguous access with compiler-enforced bounds and lifetime safety instead of relying on the closure-scoping convention alone to keep the pointer from escaping.
 
+## C string interop
+
+For C APIs that expect a NUL-terminated `const char *` rather than a pointer+length pair, both types expose `withCString`, mirroring `String.withCString`:
+
+```swift
+tinyString.withCString { cString in
+    some_c_function(cString) // const char *
+}
+```
+
+`InlineTinyString<N>` builds this with **zero heap allocation**: if there's spare capacity (`length < N`), the NUL is written directly into the type's own unused trailing storage. If the buffer is completely full (`length == N`), the last content byte is dropped to make room for the terminator — the same lossy-on-overflow behavior used everywhere else in this type, not a new failure mode to learn.
+
+Going the other direction, both types can be built directly from a C string:
+
+```swift
+let s = TinyString(cString: someCCharPointer)        // lossy, never traps
+let strict = try TinyString(strict: someCCharPointer) // throws(TinyStringError) on invalid input
+```
+
+Both scan for the NUL terminator themselves rather than calling `strlen`, so there's no dependency on a linked C runtime. Unlike the `String`/`CustomStringConvertible` bridging above, these are **not** gated behind `#if !hasFeature(Embedded)` — C interop is core to why `withUnsafeBufferPointer` exists at all, and matters most on the embedded targets these helpers are for.
+
 ## `ASCII`
 
 A single-byte value type with classification helpers (`isDigit`, `isLetter`, `isUppercase`, `isLowercase`, `isAlphanumeric`, `isWhitespace`, `isControl`, `isPrintable`) used internally by both string types and available directly.

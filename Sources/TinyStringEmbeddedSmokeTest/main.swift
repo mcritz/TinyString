@@ -80,6 +80,59 @@ func checkTinyStringInterpolation() {
     check(greeting.contains(TinyString("neg: -7")), "interpolation should format negative integers")
 }
 
+func checkTinyStringCInterop() {
+    let name = TinyString("Mo")
+    name.withCString { cStr in
+        check(cStr[0] == 0x4D, "withCString should start with the first content byte")
+        check(cStr[1] == 0x6F, "withCString should have the second content byte")
+        check(cStr[2] == 0, "withCString should be NUL-terminated right after the content")
+    }
+
+    let literal: [CChar] = [0x48, 0x69, 0] // "Hi\0"
+    literal.withUnsafeBufferPointer { buf in
+        let roundTrip = TinyString(cString: buf.baseAddress!)
+        check(roundTrip == TinyString("Hi"), "init(cString:) should round-trip ASCII content")
+    }
+
+    // Array.withUnsafeBufferPointer's closure parameter is untyped `throws`, so calling a
+    // throws(TinyStringError)-typed initializer inside it directly would force boxing into
+    // `any Error`, which Embedded Swift disallows. Route through a concrete Result instead.
+    let strictResult: Result<TinyString, TinyStringError> = literal.withUnsafeBufferPointer { buf in
+        do throws(TinyStringError) {
+            return .success(try TinyString(strict: buf.baseAddress!))
+        } catch {
+            return .failure(error)
+        }
+    }
+    switch strictResult {
+    case .success(let value):
+        check(value == TinyString("Hi"), "init(strict cString:) should succeed on valid ASCII")
+    case .failure:
+        check(false, "init(strict cString:) should not throw on valid ASCII")
+    }
+
+    let invalid: [CChar] = [0x48, -1, 0] // 'H', then an invalid (non-ASCII) byte
+    invalid.withUnsafeBufferPointer { buf in
+        let lossy = TinyString(cString: buf.baseAddress!)
+        check(lossy.byte(at: 1) == ASCII.replacementCharacter.rawValue, "init(cString:) should replace invalid bytes with '?'")
+    }
+    let invalidResult: Result<TinyString, TinyStringError> = invalid.withUnsafeBufferPointer { buf in
+        do throws(TinyStringError) {
+            return .success(try TinyString(strict: buf.baseAddress!))
+        } catch {
+            return .failure(error)
+        }
+    }
+    switch invalidResult {
+    case .success:
+        check(false, "init(strict cString:) should throw on an invalid byte")
+    case .failure(.invalidByte(at: let index, value: let value)):
+        check(index == 1 && value == 0xFF, "init(strict cString:) should report the correct invalid byte")
+    case .failure:
+        check(false, "unexpected error case")
+    }
+}
+
 #if !hasFeature(Embedded)
 func checkTinyStringBridging() {
     let s = TinyString("bridged")
@@ -146,11 +199,46 @@ func checkInlineTinyString() {
     check(interpolated.hasPrefix(InlineTinyString<16>("Hi, there! 3")), "InlineTinyString interpolation should work")
 
     check(s == InlineTinyString<8>("hello!"), "InlineTinyString should be Equatable")
+
+    // withCString: room to spare (length < N) writes NUL into unused trailing capacity.
+    let roomy = InlineTinyString<8>("Mo")
+    roomy.withCString { cStr in
+        check(cStr[0] == 0x4D && cStr[1] == 0x6F, "withCString should expose the content bytes")
+        check(cStr[2] == 0, "withCString should be NUL-terminated right after the content")
+    }
+
+    // withCString: completely full (length == N) truncates the last byte to fit the NUL.
+    let full = InlineTinyString<3>("ABC")
+    full.withCString { cStr in
+        check(cStr[0] == 0x41 && cStr[1] == 0x42, "withCString on a full buffer should keep all but the last byte")
+        check(cStr[2] == 0, "withCString on a full buffer should still be NUL-terminated")
+    }
+
+    let literal: [CChar] = [0x48, 0x69, 0] // "Hi\0"
+    literal.withUnsafeBufferPointer { buf in
+        let roundTrip = InlineTinyString<8>(cString: buf.baseAddress!)
+        check(roundTrip == InlineTinyString<8>("Hi"), "InlineTinyString.init(cString:) should round-trip ASCII content")
+    }
+
+    let strictResult: Result<InlineTinyString<8>, TinyStringError> = literal.withUnsafeBufferPointer { buf in
+        do throws(TinyStringError) {
+            return .success(try InlineTinyString<8>(strict: buf.baseAddress!))
+        } catch {
+            return .failure(error)
+        }
+    }
+    switch strictResult {
+    case .success(let value):
+        check(value == InlineTinyString<8>("Hi"), "InlineTinyString.init(strict cString:) should succeed on valid ASCII")
+    case .failure:
+        check(false, "InlineTinyString.init(strict cString:) should not throw on valid ASCII")
+    }
 }
 
 checkASCII()
 checkTinyStringCore()
 checkTinyStringInterpolation()
+checkTinyStringCInterop()
 #if !hasFeature(Embedded)
 checkTinyStringBridging()
 #endif
