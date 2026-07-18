@@ -101,4 +101,18 @@ struct InlineTinyStringCoreTests {
         let empty = InlineTinyString<8>()
         empty.withUnsafeBufferPointer { #expect($0.count == 0) }
     }
+
+    @Test("withSpan exposes exactly the live bytes, not unused capacity")
+    func withSpanExposesLiveBytes() {
+        let s = InlineTinyString<8>("abc")
+        s.withSpan { span in
+            #expect(span.count == 3)
+            #expect(span[0] == 0x61)
+            #expect(span[1] == 0x62)
+            #expect(span[2] == 0x63)
+        }
+
+        let empty = InlineTinyString<8>()
+        empty.withSpan { #expect($0.count == 0) }
+    }
 }

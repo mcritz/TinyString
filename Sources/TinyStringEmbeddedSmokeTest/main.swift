@@ -56,6 +56,11 @@ func checkTinyStringCore() {
         check(buffer[0] == 0x66, "withUnsafeBufferPointer should see the correct bytes")
     }
 
+    combined.withSpan { span in
+        check(span.count == 6, "withSpan should expose exactly byteCount bytes")
+        check(span[0] == 0x66, "withSpan should see the correct bytes")
+    }
+
     check(combined.hasPrefix(TinyString("foo")), "hasPrefix should match")
     check(combined.hasSuffix(TinyString("bar")), "hasSuffix should match")
     check(combined.contains(TinyString("oob")), "contains should find a substring")
@@ -126,6 +131,11 @@ func checkInlineTinyString() {
 
     let combined = InlineTinyString<8>("foo") + InlineTinyString<8>("bar")
     check(combined.byteCount == 6, "+ should concatenate within capacity")
+
+    combined.withSpan { span in
+        check(span.count == 6, "withSpan should expose exactly the live bytes, not unused capacity")
+        check(span[0] == 0x66, "withSpan should see the correct bytes")
+    }
 
     combined.withUnsafeBufferPointer { buffer in
         check(buffer.count == 6, "withUnsafeBufferPointer should expose exactly the live bytes, not unused capacity")

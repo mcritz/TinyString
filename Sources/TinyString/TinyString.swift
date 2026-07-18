@@ -63,7 +63,18 @@ public struct TinyString: ASCIIByteCollection, Equatable, Hashable, Sendable {
     /// Direct read-only access to the underlying bytes, for interop with APIs that need a raw
     /// pointer and count (e.g. C function boundaries). The pointer is only valid for the
     /// duration of `body`.
+    ///
+    /// Prefer ``withSpan(_:)`` unless you specifically need a raw pointer for an unsafe or C
+    /// API — `Span` gives the same contiguous access with compiler-enforced bounds and lifetime
+    /// safety instead of relying on the closure-scoping convention alone.
     public func withUnsafeBufferPointer<R>(_ body: (UnsafeBufferPointer<UInt8>) throws -> R) rethrows -> R {
         try storage.withUnsafeBufferPointer(body)
+    }
+
+    /// Safe, bounds-checked, lifetime-scoped access to the underlying bytes. Prefer this over
+    /// ``withUnsafeBufferPointer(_:)`` for any pure-Swift caller; reach for the unsafe variant
+    /// only at an actual C/unsafe API boundary.
+    public func withSpan<R>(_ body: (Span<UInt8>) throws -> R) rethrows -> R {
+        try body(storage.span)
     }
 }

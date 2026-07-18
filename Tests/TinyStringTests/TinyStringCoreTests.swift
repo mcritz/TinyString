@@ -3,6 +3,7 @@ import Testing
 
 @Suite("TinyString core")
 struct TinyStringCoreTests {
+    
     @Test("lossy init replaces invalid bytes with '?' at the correct offset")
     func lossyInitReplacesInvalidBytes() {
         let s = TinyString([0x41, 0x42, 0xFF, 0x43])
@@ -104,5 +105,19 @@ struct TinyStringCoreTests {
 
         let empty = TinyString()
         empty.withUnsafeBufferPointer { #expect($0.count == 0) }
+    }
+
+    @Test("withSpan exposes exactly the live bytes")
+    func withSpanExposesLiveBytes() {
+        let s = TinyString("abc")
+        s.withSpan { span in
+            #expect(span.count == 3)
+            #expect(span[0] == 0x61)
+            #expect(span[1] == 0x62)
+            #expect(span[2] == 0x63)
+        }
+
+        let empty = TinyString()
+        empty.withSpan { #expect($0.count == 0) }
     }
 }

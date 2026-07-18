@@ -1,8 +1,6 @@
 # TinyString
-An ASCII-only text type for [Embedded Swift](https://www.swift.org/documentation/articles/embedded-swift.html) — like `String`, but without the Unicode data tables that Embedded Swift can't afford. The same source runs unmodified on Embedded Swift (including bare-metal RISC-V microcontrollers), Swift for WebAssembly, and standard Swift on Apple/Linux platforms.
-
+An ASCII-only text type for [Embedded Swift](https://www.swift.org/documentation/articles/embedded-swift.html) — like `String`, but without the Unicode data tables that Embedded Swift can't afford. The same source runs unmodified on Embedded Swift (including bare-metal RISC-V microcontrollers), [Swift for WebAssembly](https://www.swift.org/install/macos/#swift-sdk-bundles), and standard Swift on Apple/Linux platforms.
 ## Quick start
-
 ```swift
 import TinyString
 
@@ -55,13 +53,24 @@ TinyString("12345").isAllDigits   // true
 
 `hasPrefix`/`hasSuffix`/`contains` are generic over `ASCIIByteCollection`, so they work across both types interchangeably — you can check an `InlineTinyString<8>` prefix against a heap-backed `TinyString`, or vice versa.
 
-For interop with APIs that need a raw pointer and count (C function boundaries, logging, etc.), both types expose `withUnsafeBufferPointer`:
+For contiguous byte access from pure Swift, both types expose `withSpan`, giving you a bounds-checked, lifetime-scoped [`Span`](https://www.swift.org/documentation/articles/safely-managing-pointers.html) instead of a raw pointer:
+
+```swift
+tinyString.withSpan { span in
+    span.count
+    span[0]
+}
+```
+
+For interop with APIs that need an actual raw pointer and count (C function boundaries, logging, etc.), both types also expose `withUnsafeBufferPointer`:
 
 ```swift
 tinyString.withUnsafeBufferPointer { buffer in
     some_c_function(buffer.baseAddress, Int32(buffer.count))
 }
 ```
+
+Prefer `withSpan` unless you're specifically crossing into an unsafe or C API — `Span` gives the same contiguous access with compiler-enforced bounds and lifetime safety instead of relying on the closure-scoping convention alone to keep the pointer from escaping.
 
 ## `ASCII`
 
