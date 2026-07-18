@@ -8,6 +8,9 @@ struct TinyStringStringBridgingTests {
     func descriptionRoundTrips() {
         let s = TinyString("bridged content")
         #expect(s.description == "bridged content")
+        
+        let stringValue = String(s)
+        #expect(stringValue == "bridged content", "Create a String from a TinyString")
     }
 
     @Test("lossy init(_:String) replaces non-ASCII content")

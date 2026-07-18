@@ -15,4 +15,10 @@ extension TinyString: CustomStringConvertible {
         String(decoding: storage, as: UTF8.self)
     }
 }
+
+extension String {
+    public init(_ tinyString: TinyString) {
+        self.init(tinyString.description)
+    }
+}
 #endif

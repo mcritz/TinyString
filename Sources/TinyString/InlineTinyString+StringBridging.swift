@@ -14,4 +14,11 @@ extension InlineTinyString: CustomStringConvertible {
         return String(decoding: bytes, as: UTF8.self)
     }
 }
+
+@available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
+extension String {
+    public init<let N: Int>(_ inlineTinyString: InlineTinyString<N>) {
+        self.init(inlineTinyString.description)
+    }
+}
 #endif
