@@ -93,6 +93,19 @@ let strict = try TinyString(strict: someCCharPointer) // throws(TinyStringError)
 
 Both scan for the NUL terminator themselves rather than calling `strlen`, so there's no dependency on a linked C runtime. Unlike the `String`/`CustomStringConvertible` bridging above, these are **not** gated behind `#if !hasFeature(Embedded)` — C interop is core to why `withUnsafeBufferPointer` exists at all, and matters most on the embedded targets these helpers are for.
 
+## Parsing integers
+
+Every `FixedWidthInteger` type gains a failable initializer generic over `ASCIIByteCollection`, mirroring `Int.init?(_ text: some StringProtocol)`:
+
+```swift
+UInt8(tinyString)          // Optional(42), or nil if malformed
+Int(inlineTinyString)
+```
+
+Returns `nil` — never traps — on empty input, any non-digit byte, a `-` sign on an unsigned type, a bare `-` with no digits, or overflow of the target type's range (checked via `multipliedReportingOverflow`/`addingReportingOverflow`, including `Self.min` for signed types, e.g. `Int8("-128")` parses correctly even though `128` alone doesn't fit in an `Int8`). There's no separate lossy/strict pair here, unlike the rest of TinyString's API — there's no sensible "lossy" reading of a malformed number, so a single `nil`-on-failure initializer matches Swift's own convention for numeric parsing.
+
+Only base-10 integers are supported. Floating-point/decimal parsing is intentionally out of scope (see below).
+
 ## `ASCII`
 
 A single-byte value type with classification helpers (`isDigit`, `isLetter`, `isUppercase`, `isLowercase`, `isAlphanumeric`, `isWhitespace`, `isControl`, `isPrintable`) used internally by both string types and available directly.
@@ -146,6 +159,7 @@ Install the Wasm SDKs once via `swift sdk install <bundle-url>` (see the [Embedd
 - No Unicode normalization or case-folding.
 - No `Codable` conformance.
 - No Foundation dependency, ever.
+- No decimal/floating-point parsing — meaningfully bigger scope than integer parsing (precision, scientific notation, whether a fixed-point scale is a better fit than `Double` at all), deliberately deferred rather than done half-heartedly.
 
 ## License
 

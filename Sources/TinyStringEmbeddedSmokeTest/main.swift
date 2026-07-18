@@ -133,6 +133,18 @@ func checkTinyStringCInterop() {
     }
 }
 
+func checkIntegerParsing() {
+    check(UInt8(TinyString("42")) == 42, "should parse a valid unsigned decimal")
+    check(UInt8(TinyString("999")) == nil, "should reject a value that overflows the target type")
+    check(UInt8(TinyString("-1")) == nil, "should reject a '-' sign on an unsigned type")
+    check(UInt8(TinyString("")) == nil, "should reject empty input")
+    check(UInt8(TinyString("4a")) == nil, "should reject a non-digit byte")
+    check(Int(TinyString("-42")) == -42, "should parse a negative signed decimal")
+    check(Int8(TinyString("-128")) == Int8.min, "should correctly parse Self.min via downward accumulation")
+    check(Int8(TinyString("-129")) == nil, "should reject overflow past Self.min")
+    check(Int(TinyString("-")) == nil, "should reject a bare sign with no digits")
+}
+
 #if !hasFeature(Embedded)
 func checkTinyStringBridging() {
     let s = TinyString("bridged")
@@ -233,12 +245,15 @@ func checkInlineTinyString() {
     case .failure:
         check(false, "InlineTinyString.init(strict cString:) should not throw on valid ASCII")
     }
+
+    check(Int(InlineTinyString<8>("123")) == 123, "integer parsing should work identically across both storage types")
 }
 
 checkASCII()
 checkTinyStringCore()
 checkTinyStringInterpolation()
 checkTinyStringCInterop()
+checkIntegerParsing()
 #if !hasFeature(Embedded)
 checkTinyStringBridging()
 #endif
