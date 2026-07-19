@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  macos:
+    name: macOS (build, test, Embedded smoke test)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+
+      - name: swift build
+        run: swift build
+
+      - name: swift test
+        run: swift test
+
+      # Embedded and normal builds must not share a build directory - both target the same
+      # triple, and mixing them corrupts the module cache (see README).
+      - name: Build Embedded smoke test
+        run: >
+          swift build --product TinyStringEmbeddedSmokeTest --build-path .build-embedded
+          -Xswiftc -enable-experimental-feature -Xswiftc Embedded
+
+      - name: Run Embedded smoke test
+        run: .build-embedded/*/debug/TinyStringEmbeddedSmokeTest
+
+  linux:
+    name: Linux (build, test)
+    runs-on: ubuntu-latest
+    container: swift:6.2.3
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - name: swift build
+        run: swift build
+      - name: swift test
+        run: swift test
+
+  wasm:
+    name: WebAssembly (Embedded + standard, compile check)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+
+      # Bundle provides both swift-6.2.3-RELEASE_wasm and swift-6.2.3-RELEASE_wasm-embedded.
+      # Checksum computed locally via `swift package compute-checksum` against the same
+      # download - not copied from a doc page, which tracks the latest release, not 6.2.3.
+      - name: Install Wasm Swift SDK
+        run: >
+          swift sdk install
+          https://download.swift.org/swift-6.2.3-release/wasm-sdk/swift-6.2.3-RELEASE/swift-6.2.3-RELEASE_wasm.artifactbundle.tar.gz
+          --checksum 394040ecd5260e68bb02f6c20aeede733b9b90702c2204e178f3e42413edad2a
+
+      - name: Build Embedded Wasm smoke test
+        run: swift build --product TinyStringEmbeddedSmokeTest --swift-sdk swift-6.2.3-RELEASE_wasm-embedded --build-path .build-wasm-embedded
+
+      - name: Build standard Wasm
+        run: swift build --swift-sdk swift-6.2.3-RELEASE_wasm --build-path .build-wasm
