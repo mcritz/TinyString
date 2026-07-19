@@ -28,6 +28,11 @@ struct IntegerParsingTests {
         #expect(UInt8(TinyString("4a")) == nil)
     }
 
+    @Test("parses a positive value with a signed type")
+    func validSignedPositive() {
+        #expect(Int(TinyString("42")) == 42)
+    }
+
     @Test("parses a negative signed decimal")
     func validSignedNegative() {
         #expect(Int(TinyString("-42")) == -42)
