@@ -31,7 +31,14 @@ jobs:
       # which doesn't touch the Testing framework at all.
 
       # Embedded and normal builds must not share a build directory - both target the same
-      # triple, and mixing them corrupts the module cache (see README).
+      # triple, and mixing them corrupts the module cache (see README). --build-path already
+      # isolates the two, but on this runner's toolchain (Xcode 26.3, Swift 6.2.4 - a different
+      # patch version than verified locally) leaving the prior plain `swift build`'s .build
+      # around caused InlineTinyString to keep its macOS-26 @available gate even under
+      # -enable-experimental-feature Embedded, as if the flag weren't honored. Removing .build
+      # first forces a hermetic build for this step and avoids the issue, whatever its exact
+      # cause turns out to be.
+      - run: rm -rf .build
       - name: Build Embedded smoke test
         run: >
           swift build --product TinyStringEmbeddedSmokeTest --build-path .build-embedded
