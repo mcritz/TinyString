@@ -8,7 +8,7 @@ on:
 
 jobs:
   macos:
-    name: macOS (build, Embedded smoke test)
+    name: macOS (build, test)
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -20,32 +20,8 @@ jobs:
       - name: swift build
         run: swift build
 
-      # `swift test` is deliberately not run on macOS CI: it crashes with SIGSEGV on this
-      # runner partway through Swift Testing's suite (confirmed with two different toolchains -
-      # a standalone swiftly-installed 6.2.3 and native Xcode 26.3 - and with --no-parallel, so
-      # it isn't a toolchain-integration mismatch or a concurrency bug). Confirmed the crash is
-      # unrelated to this package: TinyStringEmbeddedSmokeTest is not part of `swift test`'s own
-      # build graph (its own step's log only compiles the 7 test files + the SwiftPM test
-      # runner), and the identical 75-test suite passes cleanly on Linux below. Full Testing
-      # suite coverage lives in the linux job; macOS verifies build + the Embedded smoke test,
-      # which doesn't touch the Testing framework at all.
-
-      # Embedded and normal builds must not share a build directory - both target the same
-      # triple, and mixing them corrupts the module cache (see README). --build-path already
-      # isolates the two, but on this runner's toolchain (Xcode 26.3, Swift 6.2.4 - a different
-      # patch version than verified locally) leaving the prior plain `swift build`'s .build
-      # around caused InlineTinyString to keep its macOS-26 @available gate even under
-      # -enable-experimental-feature Embedded, as if the flag weren't honored. Removing .build
-      # first forces a hermetic build for this step and avoids the issue, whatever its exact
-      # cause turns out to be.
-      - run: rm -rf .build
-      - name: Build Embedded smoke test
-        run: >
-          swift build --product TinyStringEmbeddedSmokeTest --build-path .build-embedded
-          -Xswiftc -enable-experimental-feature -Xswiftc Embedded
-
-      - name: Run Embedded smoke test
-        run: .build-embedded/*/debug/TinyStringEmbeddedSmokeTest
+      - name: swift test
+        run: swift test
 
   linux:
     name: Linux (build, test)
