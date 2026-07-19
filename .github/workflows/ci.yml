@@ -24,7 +24,7 @@ jobs:
         run: swift build
 
       - name: swift test
-        run: swift test
+        run: swift test --no-parallel
 
       # Embedded and normal builds must not share a build directory - both target the same
       # triple, and mixing them corrupts the module cache (see README).
