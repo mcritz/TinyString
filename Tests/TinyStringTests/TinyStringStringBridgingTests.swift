@@ -16,7 +16,9 @@ struct TinyStringStringBridgingTests {
     @Test("lossy init(_:String) replaces non-ASCII content")
     func lossyInitFromStringReplaces() {
         let s = TinyString("©åƒẽ")
-        #expect(s.description.contains("?"))
+        #expect(s.description.allSatisfy { char in
+            char == "?"
+        })
     }
 }
 #endif
