@@ -12,6 +12,12 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      # macos-15's default Xcode ships Swift 6.1.0; this package needs 6.2+ (typed throws,
+      # integer generics, InlineArray, Span). Pin explicitly rather than relying on the runner's
+      # default, which drifts over time independent of this file.
+      - uses: swift-actions/setup-swift@v3
+        with:
+          swift-version: "6.2.3"
       - run: swift --version
 
       - name: swift build
@@ -47,6 +53,11 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      # Must match (or exceed) the wasm SDK bundle's own version below - a lower host
+      # toolchain can't resolve its swift-sdk.json metadata.
+      - uses: swift-actions/setup-swift@v3
+        with:
+          swift-version: "6.2.3"
       - run: swift --version
 
       # Bundle provides both swift-6.2.3-RELEASE_wasm and swift-6.2.3-RELEASE_wasm-embedded.
