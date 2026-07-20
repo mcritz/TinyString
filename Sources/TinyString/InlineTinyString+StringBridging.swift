@@ -5,6 +5,9 @@
 #if !hasFeature(Embedded)
 @available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
 extension InlineTinyString: CustomStringConvertible {
+    /// The live content (not the unused trailing capacity) decoded as a standard `String`.
+    /// Since `InlineTinyString` only ever stores validated or replacement ASCII bytes, this
+    /// decode cannot fail.
     public var description: String {
         var bytes = [UInt8]()
         bytes.reserveCapacity(length)
@@ -17,6 +20,7 @@ extension InlineTinyString: CustomStringConvertible {
 
 @available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
 extension String {
+    /// Creates a `String` from an `InlineTinyString<N>`'s live content.
     public init<let N: Int>(_ inlineTinyString: InlineTinyString<N>) {
         self.init(inlineTinyString.description)
     }

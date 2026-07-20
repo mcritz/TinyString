@@ -11,14 +11,22 @@
 // non-Embedded platforms).
 #if !hasFeature(Embedded)
 extension TinyString: CustomStringConvertible {
+    /// The content decoded as a standard `String`. Since `TinyString` only ever stores
+    /// validated or replacement ASCII bytes, this decode cannot fail.
     public var description: String {
         String(decoding: storage, as: UTF8.self)
     }
 }
 
 extension String {
+    /// Creates a `String` from a `TinyString`'s content.
     public init(_ tinyString: TinyString) {
         self.init(tinyString.description)
+    }
+    
+    /// Creates a `TinyString` from a `String`
+    public var tiny: TinyString {
+        TinyString(self)
     }
 }
 #endif
