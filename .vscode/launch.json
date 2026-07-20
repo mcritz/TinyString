@@ -1,0 +1,45 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "program": "swift",
+            "args": [
+                "test",
+                "--disable-xctest"
+            ],
+            "cwd": "${workspaceFolder:TinyString}",
+            "name": "Test",
+            "preLaunchTask": "swift: Build All"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "target": "TinyStringEmbeddedSmokeTest",
+            "configuration": "release",
+            "args": [],
+            "cwd": "${workspaceFolder:TinyString}",
+            "name": "Run TinyStringEmbeddedSmokeTest (Release)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:TinyString}",
+            "name": "Debug TinyStringEmbeddedSmokeTest",
+            "target": "TinyStringEmbeddedSmokeTest",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug TinyStringEmbeddedSmokeTest"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:TinyString}",
+            "name": "Release TinyStringEmbeddedSmokeTest",
+            "target": "TinyStringEmbeddedSmokeTest",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release TinyStringEmbeddedSmokeTest"
+        }
+    ]
+}

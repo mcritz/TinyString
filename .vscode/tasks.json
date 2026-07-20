@@ -1,0 +1,22 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "swift",
+			"args": [
+				"build",
+				"--build-tests"
+			],
+			"env": {},
+			"cwd": "${workspaceFolder:TinyString}",
+			"disableTaskQueue": true,
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"label": "swift: Build All",
+			"detail": "swift build --build-tests"
+		}
+	]
+}
