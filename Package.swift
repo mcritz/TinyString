@@ -22,13 +22,11 @@ let package = Package(
             // manifest setting — setting it here would force the Testing-based test target
             // into Embedded mode too and break `swift test`.
         ),
-        /*
         .executableTarget(
             name: "TinyStringEmbeddedSmokeTest",
             dependencies: ["TinyString"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
-        */
         .testTarget(
             name: "TinyStringTests",
             dependencies: ["TinyString"]
