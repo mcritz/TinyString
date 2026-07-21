@@ -3,3 +3,7 @@
 /.swiftpm
 .netrc
 *.xcodeproj
+# A committed .swift-version pins every Swift Package Index builder platform (macOS, Linux,
+# Wasm, Android, Windows) to one exact toolchain — breaks any platform whose image hasn't
+# caught up to that patch release yet (this is what broke the Android build). Local-only.
+.swift-version

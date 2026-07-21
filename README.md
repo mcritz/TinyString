@@ -1,5 +1,10 @@
 # TinyString
 An ASCII-only text type for [Embedded Swift](https://www.swift.org/documentation/articles/embedded-swift.html) — like `String`, but without the Unicode data tables that Embedded Swift can't afford. The same source runs unmodified on Embedded Swift (including bare-metal RISC-V microcontrollers), [Swift for WebAssembly](https://www.swift.org/install/macos/#swift-sdk-bundles), and standard Swift on Apple/Linux platforms.
+
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fmcritz%2FTinyString%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/mcritz/TinyString)&nbsp;
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fmcritz%2FTinyString%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/mcritz/TinyString)
+
+
 ## Quick start
 ```swift
 import TinyString
