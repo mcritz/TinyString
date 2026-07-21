@@ -9,12 +9,14 @@ on:
 jobs:
   macos:
     name: macOS (build, test)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-      # macos-15's default Xcode ships Swift 6.1.0; this package needs 6.2+ (typed throws,
-      # integer generics, InlineArray, Span).
-      - run: sudo xcode-select -s /Applications/Xcode_26.3.app
+      # `swift test` has been an unreliable SIGSEGV on macos-15's runner across several
+      # toolchains (see git history); trying the newer macos-26 image + newest Xcode as an
+      # attempt to dodge that runner-specific crash rather than a language-feature requirement
+      # (6.2+ has been enough since InlineArray/Span/typed-throws/integer generics arrived).
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app
       - run: swift --version
 
       - name: swift build
@@ -26,7 +28,7 @@ jobs:
   linux:
     name: Linux (build, test)
     runs-on: ubuntu-latest
-    container: swift:6.2.3
+    container: swift:6.3.3
     steps:
       - uses: actions/checkout@v4
       - run: swift --version
@@ -44,20 +46,20 @@ jobs:
       # toolchain can't resolve its swift-sdk.json metadata.
       - uses: swift-actions/setup-swift@v3
         with:
-          swift-version: "6.2.3"
+          swift-version: "6.3.3"
       - run: swift --version
 
-      # Bundle provides both swift-6.2.3-RELEASE_wasm and swift-6.2.3-RELEASE_wasm-embedded.
+      # Bundle provides both swift-6.3.3-RELEASE_wasm and swift-6.3.3-RELEASE_wasm-embedded.
       # Checksum computed locally via `swift package compute-checksum` against the same
-      # download - not copied from a doc page, which tracks the latest release, not 6.2.3.
+      # download - not copied from a doc page, which tracks the latest release, not 6.3.3.
       - name: Install Wasm Swift SDK
         run: >
           swift sdk install
-          https://download.swift.org/swift-6.2.3-release/wasm-sdk/swift-6.2.3-RELEASE/swift-6.2.3-RELEASE_wasm.artifactbundle.tar.gz
-          --checksum 394040ecd5260e68bb02f6c20aeede733b9b90702c2204e178f3e42413edad2a
+          https://download.swift.org/swift-6.3.3-release/wasm-sdk/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE_wasm.artifactbundle.tar.gz
+          --checksum cabfa08b73bb8ac783927ecd15fa386e99d0c139c5f232445067bcf58379cae7
 
       - name: Build Embedded Wasm smoke test
-        run: swift build --product TinyStringEmbeddedSmokeTest --swift-sdk swift-6.2.3-RELEASE_wasm-embedded --build-path .build-wasm-embedded
+        run: swift build --product TinyStringEmbeddedSmokeTest --swift-sdk swift-6.3.3-RELEASE_wasm-embedded --build-path .build-wasm-embedded
 
       - name: Build standard Wasm
-        run: swift build --swift-sdk swift-6.2.3-RELEASE_wasm --build-path .build-wasm
+        run: swift build --swift-sdk swift-6.3.3-RELEASE_wasm --build-path .build-wasm
